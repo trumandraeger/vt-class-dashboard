@@ -35,7 +35,7 @@ def parse_subject(url):
         if not (code_tag and title_tag and cred_tag):
             continue
 
-        code_str = code_tag.get_text(strip=True)  # e.g. "ACIS 1004" or "FIN XXXX"
+        code_str = code_tag.get_text(strip=True)
         title = title_tag.get_text(strip=True).lstrip('-').strip()
         credits = re.search(r"\d+(-\d+)?", cred_tag.get_text()).group()
 
@@ -43,21 +43,21 @@ def parse_subject(url):
         desc = desc_tag.get_text(" ", strip=True) if desc_tag else ""
 
         num_match = re.search(r"\d{3,4}[A-Z]?|\d{4}-\d{4}|XXXX", code_str)
-        if not num_match:  # nothing we recognize → skip row or log
+        if not num_match:
             print(f"⚠︎ Unusual code: {code_str!r}")
-            continue  # or keep going with course_num = ""
+            continue
         course_num = num_match.group()
 
         rows.append({
-            "subject"      : re.match(r"[A-Z]+", code_str).group(),
-            "number"       : course_num,
-            "title"        : title,
-            "credits"      : credits,
-            "description"  : desc,
+            "subject": re.match(r"[A-Z]+", code_str).group(),
+            "number": course_num,
+            "title": title,
+            "credits": credits,
+            "description": desc,
             "prerequisites": pull(blk, ".detail-prereq"),
-            "corequisites" : pull(blk, ".detail-coreq"),
+            "corequisites": pull(blk, ".detail-coreq"),
             "contact_hours": pull(blk, ".detail-contact_hours"),
-            "pathways"     : pull(blk, ".detail-pathway"),
+            "pathways": pull(blk, ".detail-pathway"),
         })
     return rows
 
@@ -65,7 +65,7 @@ def main():
     all_rows = []
     for url in tqdm(sorted(collect_subject_urls())):
         all_rows.extend(parse_subject(url))
-        time.sleep(1)                         # polite crawl
+        time.sleep(1)
     pd.DataFrame(all_rows).to_csv("vt_courses.csv", index=False)
     print(f"Saved {len(all_rows):,} rows → vt_courses.csv")
 
