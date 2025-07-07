@@ -61,7 +61,6 @@ df_meta = (
     .agg({'Course Title':'first','GPA':'mean'})
 )
 df_combined = pd.merge(df_meta, df_avg, on=group_cols).round(2)
-
 df_combined = (
     df_combined
     .merge(course_info, on=['Subject','Course No.'], how='left')
@@ -75,6 +74,7 @@ df_combined = (
         'pathways':''
     })
 )
+df_combined['CourseKey'] = df_combined['Subject'] + " " + df_combined['Course No.']
 
 # building disply table
 if group_mode == "Separate professors":
@@ -85,37 +85,51 @@ else:
 df_display = df_combined[display_cols]
 
 # sidebar filters
-all_depts   = sorted(df_combined['Subject'].unique())
-all_courses = sorted(df_combined['Course No.'].unique())
-
-# multiselect & select all
-dept_options        = ["Select all"] + all_depts
+all_depts = sorted(df_combined['Subject'].unique())
+dept_options = ["Select all"] + all_depts
 selected_departments = st.sidebar.multiselect(
-    "Department", dept_options, default=[]
+    "Department", dept_options, default=["Select all"]
 )
 if "Select all" in selected_departments:
     selected_departments = all_depts
+
+# determine available CourseKey options
 if selected_departments:
-    available_courses = sorted(
-        df_combined[df_combined['Subject'].isin(selected_departments)]
-        ['Course No.']
+    available_course_keys = sorted(
+        df_combined[
+            df_combined['Subject'].isin(selected_departments)
+        ]['CourseKey']
         .unique()
     )
 else:
-    available_courses = []
-course_options    = ["Select all"] + available_courses
-selected_courses  = st.sidebar.multiselect(
-    "Course No.", course_options, default=[]
-)
-if "Select all" in selected_courses:
-    selected_courses = available_courses
+    available_course_keys = []
 
-# filtering
-df_display = df_combined[display_cols].copy()
-df_display = df_display[
-    df_display['Subject'].isin(selected_departments) &
-    df_display['Course No.'].isin(selected_courses)
-].reset_index(drop=True)
+# helper for sidebar course display
+def format_course_key(key):
+    if key == "Select all":
+        return key
+    title = df_combined.loc[
+        df_combined['CourseKey'] == key,
+        'Course Title'
+    ].iat[0]
+    return f"{title} ({key})"
+
+course_options = ["Select all"] + available_course_keys
+selected_course_keys = st.sidebar.multiselect(
+    "Course",
+    course_options,
+    default=[],
+    format_func=format_course_key
+)
+if "Select all" in selected_course_keys:
+    selected_course_keys = available_course_keys
+
+# filtering by department + CourseKey
+mask = df_combined['Subject'].isin(selected_departments)
+if selected_course_keys:
+    mask &= df_combined['CourseKey'].isin(selected_course_keys)
+
+df_display = df_combined.loc[mask, display_cols].reset_index(drop=True)
 
 # displaying aggregated table
 if not selected_departments:
@@ -126,7 +140,16 @@ else:
     title = f"{len(selected_departments)} departments"
 
 st.subheader(f"{title} — {len(df_display):,} courses")
-st.dataframe(df_display)
+st.dataframe(
+    df_display,
+    column_config={
+        "Course Title": st.column_config.TextColumn(
+            label="Course Title",
+            width="medium"
+        )
+    },
+    use_container_width=True
+)
 
 # CHARTS
 
