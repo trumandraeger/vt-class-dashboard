@@ -172,7 +172,9 @@ if df_display.shape[0] == 1:
         value_name='Percent'
     )
 
-    st.subheader(f"{df_display.iloc[0]['Course No.']} Grade Distribution (bar)")
+    st.subheader(
+    f"{full_row['Course Title']} ({full_row['Subject']} {full_row['Course No.']}) Grade Distribution (bar)"
+)
 
     custom_colors = [
         '#53a4f5',
