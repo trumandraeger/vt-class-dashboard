@@ -88,7 +88,7 @@ df_display = df_combined[display_cols]
 all_depts = sorted(df_combined['Subject'].unique())
 dept_options = ["Select all"] + all_depts
 selected_departments = st.sidebar.multiselect(
-    "Department", dept_options, default=["Select all"]
+    "Department", dept_options, default=[]
 )
 if "Select all" in selected_departments:
     selected_departments = all_depts
